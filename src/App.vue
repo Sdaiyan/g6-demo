@@ -51,10 +51,13 @@ const resetView = () => {
 };
 
 // 处理节点点击
-const handleNodeClick = (node: NodeData) => {
-  selectedNode.value = node;
-  selectedNodeId.value = node.id;
-  showDetailPanel.value = true;
+const handleNodeClick = (nodeid: string) => {
+  const node = graphData.value.nodes.find(n => n.id === nodeid);
+  if (node) {
+    selectedNode.value = node;
+    selectedNodeId.value = node.id;
+    showDetailPanel.value = true;
+  }
 };
 
 // 处理节点悬停
