@@ -20,7 +20,7 @@ const defaultConfig: GeneratorConfig = {
   edgeDensity: 0.2, // 降低跨层连接密度，保持清晰的层次结构
   attributeTypes: ['person', 'company', 'product', 'location'],
   locale: 'zh_CN',
-  seed: 12345
+  seed: Math.floor(Math.random() * 10000),
 };
 
 // 计算容器尺寸
@@ -35,6 +35,7 @@ const containerHeight = computed(() => {
 // 生成随机数据
 const generateData = () => {
   try {
+    defaultConfig.seed = Math.floor(Math.random() * 10000);
     const newData = generateGraphData(defaultConfig);
     graphData.value = newData;
     console.log('Generated graph data:', newData);

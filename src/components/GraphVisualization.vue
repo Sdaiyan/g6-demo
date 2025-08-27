@@ -83,7 +83,7 @@ const initGraph = () => {
 		node: {
 			style: {
 				size: (d: any) => {
-					return 50 - (d.data.level || 0) * 20;
+					return 50 - (d.data.level || 0) * 15;
 				},
 				fill: (d: any) => {
 					const colors = ['#5B8FF9', '#5AD8A6', '#5D7092', '#F6BD16', '#E86452'];
@@ -103,26 +103,13 @@ const initGraph = () => {
 				},
 				labelText: (d: any) => d.data.name,
 				labelFontSize: (d: any) => {
-					// 根据节点大小调整字体大小
-					if (d.data.level === 0) {
-						return 14;
-					} else if (d.data.isLeaf) {
-						return 10;
-					} else {
-						return 12;
-					}
+					return 12 - (d.data.level || 0) * 3;
 				},
+				labelWordWrap: true,
+				labelMaxLines: 3,	
+				labelMaxWidth: 60,
 				labelFill: '#333',
-				labelOffsetY: (d: any) => {
-					// 根据节点大小调整标签偏移
-					if (d.data.level === 0) {
-						return 30;
-					} else if (d.data.isLeaf) {
-						return 20;
-					} else {
-						return 25;
-					}
-				},
+				labelPlacement: 'bottom',
 			},
 			state: {
 				selected: {
@@ -174,17 +161,7 @@ const initGraph = () => {
 			type: 'd3-force',
 			link: {
 				distance: (d: any) => {
-					// 根据父子节点层级调整连接距离
-					if (d.source.data.level === 0) {
-						// 根节点到第一层的距离
-						return 100;
-					} else if (d.target.data.isLeaf) {
-						// 到叶子节点的距离较短
-						return 30;
-					} else {
-						// 中间层节点之间的距离
-						return 60;
-					}
+					return 100 - (d.source.data.level || 0) * 25;
 				},
 				strength: (d: any) => {
 					// 根据节点类型调整连接强度
@@ -221,6 +198,7 @@ const initGraph = () => {
 			},
 		},
 		behaviors: [
+			'drag-element-force',
 			{
 				type: 'hover-activate',
 				enable: (event) => event.targetType === 'node',
@@ -235,23 +213,11 @@ const initGraph = () => {
 				},
 			},
 			{
-				type: 'fix-element-size',
 				key: 'fix-element-size',
-				enable: true,
-				node: [
-					{
-						shape: (shapes) =>
-							shapes.find((shape) => shape.parentElement?.className === 'label' && shape.className === 'text'),
-						fields: ['fontSize', 'lineHeight'],
-					},
-				],
-				edge: [
-					{
-						shape: (shapes) =>
-							shapes.find((shape) => shape.parentElement?.className === 'label' && shape.className === 'text'),
-						fields: ['fontSize', 'lineHeight'],
-					},
-				],
+				type: 'fix-element-size',
+				enable: (event) => event.data.scale < 1,
+				state: 'selected',
+				reset: true,
 			},
 			{
 				type: 'click-select',
@@ -260,7 +226,6 @@ const initGraph = () => {
 					emit('node-click', event.target.id);
 				}
 			},
-			'drag-element-force',
 			'zoom-canvas',
 			'drag-canvas',
 		],

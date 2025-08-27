@@ -157,7 +157,7 @@ export const generateRandomNodes = (config: GeneratorConfig): NodeData[] => {
   nodes.push(rootNode);
   
   // 第1层：生成3-5个中间节点
-  const level1Count = currentFaker.number.int({ min: 3, max: 5 });
+  const level1Count = currentFaker.number.int({ min: 25, max: 36 });
   for (let i = 0; i < level1Count; i++) {
     const nodeType = currentFaker.helpers.arrayElement(attributeTypes);
     const nodeId = `level1_${i}`;
@@ -169,7 +169,7 @@ export const generateRandomNodes = (config: GeneratorConfig): NodeData[] => {
   // 第2层：为每个第1层节点生成3-6个叶子节点
   const level1Nodes = nodes.filter(n => n.level === 1);
   level1Nodes.forEach((parentNode, parentIndex) => {
-    const leafCount = currentFaker.number.int({ min: 3, max: 6 });
+    const leafCount = currentFaker.number.int({ min: 1, max: 6 });
     for (let i = 0; i < leafCount; i++) {
       const nodeType = currentFaker.helpers.arrayElement(attributeTypes);
       const nodeId = `leaf_${parentIndex}_${i}`;
