@@ -157,7 +157,7 @@ export const generateRandomNodes = (config: GeneratorConfig): NodeData[] => {
   nodes.push(rootNode);
   
   // 第1层：生成3-5个中间节点
-  const level1Count = currentFaker.number.int({ min: 25, max: 36 });
+  const level1Count = currentFaker.number.int({ min: 10, max: 16 });
   for (let i = 0; i < level1Count; i++) {
     const nodeType = currentFaker.helpers.arrayElement(attributeTypes);
     const nodeId = `level1_${i}`;

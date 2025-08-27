@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-	nodeClick: [node: NodeData];
+	nodeClick: [nodeid: string];
 	nodeHover: [node: NodeData | null];
 	canvasClick: [];
 }>();
@@ -201,29 +201,29 @@ const initGraph = () => {
 			'drag-element-force',
 			{
 				type: 'hover-activate',
-				enable: (event) => event.targetType === 'node',
+				enable: (event: any) => event.targetType === 'node',
 				degree: 1, // 👈🏻 Activate relations.
 				state: 'highlight',
 				inactiveState: 'dim',
-				onHover: (event) => {
+				onHover: (event: any) => {
 					event.view.setCursor('pointer');
 				},
-				onHoverEnd: (event) => {
+				onHoverEnd: (event: any) => {
 					event.view.setCursor('default');
 				},
 			},
 			{
 				key: 'fix-element-size',
 				type: 'fix-element-size',
-				enable: (event) => event.data.scale < 1,
+				enable: (event: any) => event.data.scale < 1,
 				state: 'selected',
 				reset: true,
 			},
 			{
 				type: 'click-select',
       	key: 'click-select-1',
-				onClick: (event) => {
-					emit('node-click', event.target.id);
+				onClick: (event: any) => {
+					emit('nodeClick', event.target.id);
 				}
 			},
 			'zoom-canvas',
