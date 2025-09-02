@@ -157,24 +157,28 @@ export const generateRandomNodes = (config: GeneratorConfig): NodeData[] => {
   nodes.push(rootNode);
   
   // 第1层：生成3-5个中间节点
-  const level1Count = currentFaker.number.int({ min: 10, max: 16 });
+  const level1Count = currentFaker.number.int({ min: 28, max: 36 });
   for (let i = 0; i < level1Count; i++) {
     const nodeType = currentFaker.helpers.arrayElement(attributeTypes);
     const nodeId = `level1_${i}`;
     const node = generateNodeByType(nodeId, nodeType, 1);
     node.parentId = rootNode.id;
+    // 二级的 category 为自己的 nodeId
+    node.category = nodeId;
     nodes.push(node);
   }
   
   // 第2层：为每个第1层节点生成3-6个叶子节点
   const level1Nodes = nodes.filter(n => n.level === 1);
   level1Nodes.forEach((parentNode, parentIndex) => {
-    const leafCount = currentFaker.number.int({ min: 1, max: 6 });
+    const leafCount = currentFaker.number.int({ min: 6, max: 8 });
     for (let i = 0; i < leafCount; i++) {
       const nodeType = currentFaker.helpers.arrayElement(attributeTypes);
       const nodeId = `leaf_${parentIndex}_${i}`;
       const leafNode = generateNodeByType(nodeId, nodeType, 2);
       leafNode.parentId = parentNode.id;
+      // 二级以下的 category 为当前二级的 nodeId
+      leafNode.category = parentNode.id;
       nodes.push(leafNode);
     }
   });
@@ -196,7 +200,7 @@ export const generateRandomNodes = (config: GeneratorConfig): NodeData[] => {
 };
 
 // 生成随机连接
-export const generateRandomEdges = (nodes: NodeData[], edgeDensity: number = 0.3): EdgeData[] => {
+export const generateRandomEdges = (nodes: NodeData[], edgeDensity: number = 0.01): EdgeData[] => {
   const edges: EdgeData[] = [];
   const edgeSet = new Set<string>(); // 防止重复连接
   
@@ -233,7 +237,8 @@ export const generateRandomEdges = (nodes: NodeData[], edgeDensity: number = 0.3
       const reverseEdgeId = `${targetNode.id}-${sourceNode.id}`;
       
       if (!edgeSet.has(edgeId) && !edgeSet.has(reverseEdgeId)) {
-        const edgeType = currentFaker.helpers.arrayElement(['single', 'double', 'weighted']);
+        // const edgeType = currentFaker.helpers.arrayElement(['single', 'double', 'weighted']);
+        const edgeType = currentFaker.helpers.arrayElement(['single', 'double']);
         const weight = currentFaker.number.float({ min: 0.1, max: 1, fractionDigits: 1 });
         
         edges.push({

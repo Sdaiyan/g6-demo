@@ -16,6 +16,7 @@ const selectedNodeId = ref<string>();
 const showDetailPanel = ref(false);
 const graphRef = ref();
 const is3DMode = ref(false); // 3D模式切换
+const graphKey = ref(0); // 用于强制重新创建图组件的key
 
 // 默认生成配置
 const defaultConfig: GeneratorConfig = {
@@ -37,10 +38,22 @@ const containerHeight = computed(() => {
 // 生成随机数据
 const generateData = () => {
   try {
+    // 1. 清除当前选中状态
+    selectedNode.value = undefined;
+    selectedNodeId.value = undefined;
+    showDetailPanel.value = false;
+    
+    // 2. 生成新的随机数据
     defaultConfig.seed = Math.floor(Math.random() * 10000);
     const newData = generateGraphData(defaultConfig);
+    
+    // 3. 更新数据
     graphData.value = newData;
-    console.log('Generated graph data:', newData);
+    
+    // 4. 更新key强制重新创建组件（这会自动销毁旧实例并创建新实例）
+    graphKey.value += 1;
+    
+    console.log('Generated new graph data with seed:', defaultConfig.seed, 'key:', graphKey.value);
   } catch (error) {
     console.error('Failed to generate data:', error);
   }
@@ -203,6 +216,7 @@ onMounted(() => {
           <!-- 2D 视图 -->
           <GraphVisualization
             v-if="!is3DMode"
+            :key="`graph-2d-${graphKey}`"
             ref="graphRef"
             :data="graphData"
             :selected-node-id="selectedNodeId"
@@ -216,6 +230,7 @@ onMounted(() => {
           <!-- 3D 视图 -->
           <GraphVisualization3D
             v-if="is3DMode"
+            :key="`graph-3d-${graphKey}`"
             ref="graphRef"
             :data="graphData"
             :selected-node-id="selectedNodeId"

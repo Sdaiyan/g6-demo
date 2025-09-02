@@ -15,11 +15,18 @@ interface Props {
 	selectedNodeId?: string;
 	width?: number;
 	height?: number;
+	// 距离计算参数
+	baseDistance?: number;
+	distanceMultiplier?: number;
+	maxLevel?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	width: 800,
-	height: 600
+	height: 600,
+    baseDistance: 50,
+    distanceMultiplier: 1.2,
+	maxLevel: 4
 });
 
 // Emits
@@ -67,6 +74,22 @@ const convertDataForG6 = (data: GraphData) => {
 	return result;
 };
 
+// 根据层级计算距离的算法
+const calculateDistanceByLevel = (level: number) => {
+	// 计算公式: baseDistance * (multiplier ^ (maxLevel - level))
+	// level 0 (根节点) -> 最大距离
+	// level 越大 -> 距离越小
+	const distance = props.baseDistance * Math.pow(props.distanceMultiplier, props.maxLevel - level);
+	
+	// 限制最小和最大距离
+	const result = Math.max(30, Math.min(400, Math.round(distance)));
+	
+	// 调试输出（可选）
+	// console.log(`Level ${level}: distance = ${result} (raw: ${distance})`);
+	
+	return result;
+};
+
 // 初始化图
 const initGraph = () => {
 	if (!graphContainer.value) return;
@@ -83,23 +106,16 @@ const initGraph = () => {
 		node: {
 			style: {
 				size: (d: any) => {
-					return 50 - (d.data.level || 0) * 15;
-				},
-				fill: (d: any) => {
-					const colors = ['#5B8FF9', '#5AD8A6', '#5D7092', '#F6BD16', '#E86452'];
-					return colors[(d.data.level || 0) % colors.length];
-				},
-				stroke: (d: any) => {
-					// 如果节点被选中，使用红色边框
-					if (d.data.selected) {
-						return '#f00';
+					if (d.data.level === 0) {
+						return 150
 					}
-					const colors = ['#5B8FF9', '#5AD8A6', '#5D7092', '#F6BD16', '#E86452'];
-					return colors[(d.data.level || 0) % colors.length];
-				},
-				lineWidth: (d: any) => {
-					// 如果节点被选中，使用更粗的边框
-					return d.data.selected ? 3 : 2;
+					if (d.data.level === 1) {
+						return 50
+					}
+					if (d.data.level === 2) {
+						return 15
+					}
+					return 15
 				},
 				labelText: (d: any) => d.data.name,
 				labelFontSize: (d: any) => {
@@ -121,6 +137,22 @@ const initGraph = () => {
 					lineWidth: 2,
 				},
 			},
+			palette: {
+				field: 'category',
+				type: 'group',
+				color: [
+                    '#FF6B6B', '#FF7F7F', '#FF9393', '#FFA7A7', '#FFBBBB', // 红色系
+                    '#FF8A80', '#FF9800', '#FFB74D', '#FFCC02', '#FFEB3B', // 橙黄过渡
+                    '#CDDC39', '#8BC34A', '#4CAF50', '#26A69A', '#00BCD4', // 绿色系
+                    '#00ACC1', '#0288D1', '#1976D2', '#303F9F', '#512DA8', // 蓝色系
+                    '#673AB7', '#7B1FA2', '#8E24AA', '#AB47BC', '#BA68C8', // 紫色系
+                    '#CE93D8', '#E1BEE7', '#F8BBD9', '#F48FB1', '#F06292', // 粉色系
+                    '#EC407A', '#E91E63', '#AD1457', '#880E4F', '#FF5722', // 深红回归
+                    '#FF7043', '#FF8A65', '#FFAB91', '#FFCCBC', '#FFF3E0', // 橙色浅化
+                    '#FFE0B2', '#FFCC80', '#FFB74D', '#FF9800', '#F57C00', // 橙色深化
+                    '#E65100', '#D84315', '#BF360C', '#A0260E', '#8D1E0B'  // 深橙棕色
+                ],
+			}
 		},
 		edge: {
 			state: {
@@ -161,7 +193,14 @@ const initGraph = () => {
 			type: 'd3-force',
 			link: {
 				distance: (d: any) => {
-					return 100 - (d.source.data.level || 0) * 25;
+					// 使用新的距离计算算法
+					const sourceLevel = d.source.data.level || 0;
+					const targetLevel = d.target.data.level || 0;
+					
+					// 使用较高层级（较小数值）的节点来决定距离
+					const effectiveLevel = Math.min(sourceLevel, targetLevel);
+					
+					return calculateDistanceByLevel(effectiveLevel);
 				},
 				strength: (d: any) => {
 					// 根据节点类型调整连接强度
@@ -222,6 +261,9 @@ const initGraph = () => {
 			{
 				type: 'click-select',
 				key: 'click-select-1',
+      			degree: 1, // 选中扩散范围
+      			neighborState: 'neighborActive', // 相邻节点附着状态
+      			unselectedState: 'inactive', // 未选中节点状态
 				onClick: (event: any) => {
 					emit('nodeClick', event.target.id);
 				}
@@ -268,15 +310,15 @@ const highlightNode = (nodeId: string) => {
 	if (!graph || !nodeId || !props.data || !props.data.nodes) return;
 
 	try {
-		// 清除所有选中状态
-		props.data.nodes.forEach(node => {
-			if (node.id) {
-				graph!.setElementState(node.id, 'inactive');
-			}
-		});
+		// // 清除所有选中状态
+		// props.data.nodes.forEach(node => {
+		// 	if (node.id) {
+		// 		graph!.setElementState(node.id, 'inactive');
+		// 	}
+		// });
 
-		// 设置指定节点为选中状态
-		graph.setElementState(nodeId, 'highlight');
+		// // 设置指定节点为选中状态
+		// graph.setElementState(nodeId, 'selected');
 
 		// 聚焦到该节点
 		graph.focusElement(nodeId);
@@ -303,9 +345,27 @@ defineExpose({
 });
 
 // 监听数据变化
-watch(() => props.data, () => {
+watch(() => props.data, (newData, oldData) => {
 	nextTick(() => {
-		updateGraphData();
+		// 如果数据结构发生重大变化（比如节点数量变化超过阈值），重新初始化图
+		if (!oldData || 
+			Math.abs(newData.nodes.length - oldData.nodes.length) > 2 ||
+			Math.abs(newData.edges.length - oldData.edges.length) > 5) {
+			
+			console.log('Data structure changed significantly, reinitializing 2D graph');
+			
+			// 销毁现有图实例
+			if (graph) {
+				graph.destroy();
+				graph = null;
+			}
+			
+			// 重新初始化
+			initGraph();
+		} else {
+			// 小幅数据变化，只更新数据
+			updateGraphData();
+		}
 	});
 }, { deep: true });
 

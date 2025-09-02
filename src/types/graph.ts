@@ -24,6 +24,7 @@ export interface NodeData {
     lineWidth?: number;
     r?: number;
   };
+  category?: string;
 }
 
 export interface EdgeData {

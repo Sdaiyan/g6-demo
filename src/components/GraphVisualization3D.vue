@@ -25,11 +25,18 @@ interface Props {
     selectedNodeId?: string;
     width?: number;
     height?: number;
+    // 距离计算参数
+    baseDistance?: number;
+    distanceMultiplier?: number;
+    maxLevel?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     width: 800,
-    height: 600
+    height: 600,
+    baseDistance: 50,
+    distanceMultiplier: 1.2,
+    maxLevel: 4
 });
 
 // Emits
@@ -52,7 +59,6 @@ const convertDataForG6_3D = (data: GraphData) => {
                 id: node.id,
                 data: {
                     ...node,
-                    group: node.level || 0, // 用于调色板分组
                     isLeaf: isLeaf,
                 }
             };
@@ -70,12 +76,23 @@ const convertDataForG6_3D = (data: GraphData) => {
     return result;
 };
 
+// 根据层级计算距离的算法（3D版本）
+const calculateDistanceByLevel = (level: number) => {
+    // 计算公式: baseDistance * (multiplier ^ (maxLevel - level))
+    // level 0 (根节点) -> 最大距离
+    // level 越大 -> 距离越小
+    const distance = props.baseDistance * Math.pow(props.distanceMultiplier, props.maxLevel - level);
+    
+    // 3D空间中距离可以稍大一些
+    return Math.max(40, Math.min(500, Math.round(distance * 1.2)));
+};
+
 // 初始化3D图
 const initGraph = () => {
     if (!graphContainer.value) return;
 
     const convertedData = convertDataForG6_3D(props.data);
-
+    console.log('Initialized 3D graph with data:', convertedData);
     graph = new Graph({
         container: graphContainer.value,
         renderer,
@@ -84,53 +101,83 @@ const initGraph = () => {
         data: convertedData,
         layout: {
             type: 'd3-force-3d',
-            link: {
-                distance: (d: any) => {
-                    return 100 - (d.source.data.level || 0) * 25;
-                },
-                strength: (d: any) => {
-                    // 根据节点类型调整连接强度
-                    if (d.source.data.level === 1 || d.source.data.level === 2) {
-                        // 中间层节点的连接强度较高，保持结构紧密
-                        return 0.7;
-                    } else if (d.target.data.isLeaf) {
-                        // 到叶子节点的连接强度较低
-                        return 0.1;
-                    } else {
-                        // 其他连接的默认强度
-                        return 0.3;
-                    }
-                },
-            },
-            manyBody: {
-                strength: (d: any) => {
-                    // 根据节点类型调整斥力
-                    if (d.data.isLeaf) {
-                        // 叶子节点斥力较小，可以更紧密排列
-                        return -50;
-                    } else if (d.data.level === 0) {
-                        // 根节点斥力最大，保持中心位置
-                        return -200;
-                    } else {
-                        // 中间层节点斥力适中
-                        return -100;
-                    }
-                },
-            },
+			link: {
+				distance: (d: any) => {
+					// 使用新的距离计算算法
+					const sourceLevel = d.source.data.level || 0;
+					const targetLevel = d.target.data.level || 0;
+					
+					// 使用较高层级（较小数值）的节点来决定距离
+					const effectiveLevel = Math.min(sourceLevel, targetLevel);
+					
+					return calculateDistanceByLevel(effectiveLevel);
+				},
+				strength: (d: any) => {
+					// 根据节点类型调整连接强度
+					if (d.source.data.level === 1 || d.source.data.level === 2) {
+						// 中间层节点的连接强度较高，保持结构紧密
+						return 0.7;
+					} else if (d.target.data.isLeaf) {
+						// 到叶子节点的连接强度较低
+						return 0.1;
+					} else {
+						// 其他连接的默认强度
+						return 0.3;
+					}
+				},
+			},
+			manyBody: {
+				strength: (d: any) => {
+					// 根据节点类型调整斥力
+					if (d.data.isLeaf) {
+						// 叶子节点斥力较小，可以更紧密排列
+						return -50;
+					} else if (d.data.level === 0) {
+						// 根节点斥力最大，保持中心位置
+						return -200;
+					} else {
+						// 中间层节点斥力适中
+						return -100;
+					}
+				},
+			},
         },
         node: {
             type: 'sphere',
             style: {
                 materialType: 'phong',
-                labelText: (d) => {
-                    return d.data.name
+                labelText: (d: any) => {
+                    return d.data?.name || '';
                 },
                 labelFill: '#fff',
+				size: (d: any) => {
+					if (d.data.level === 0) {
+						return 120
+					}
+					if (d.data.level === 1) {
+						return 70
+					}
+					if (d.data.level === 2) {
+						return 30
+					}
+					return 15
+				},
             },
             palette: {
-                color: 'tableau',
+                color: [
+                    '#FF6B6B', '#FF7F7F', '#FF9393', '#FFA7A7', '#FFBBBB', // 红色系
+                    '#FF8A80', '#FF9800', '#FFB74D', '#FFCC02', '#FFEB3B', // 橙黄过渡
+                    '#CDDC39', '#8BC34A', '#4CAF50', '#26A69A', '#00BCD4', // 绿色系
+                    '#00ACC1', '#0288D1', '#1976D2', '#303F9F', '#512DA8', // 蓝色系
+                    '#673AB7', '#7B1FA2', '#8E24AA', '#AB47BC', '#BA68C8', // 紫色系
+                    '#CE93D8', '#E1BEE7', '#F8BBD9', '#F48FB1', '#F06292', // 粉色系
+                    '#EC407A', '#E91E63', '#AD1457', '#880E4F', '#FF5722', // 深红回归
+                    '#FF7043', '#FF8A65', '#FFAB91', '#FFCCBC', '#FFF3E0', // 橙色浅化
+                    '#FFE0B2', '#FFCC80', '#FFB74D', '#FF9800', '#F57C00', // 橙色深化
+                    '#E65100', '#D84315', '#BF360C', '#A0260E', '#8D1E0B'  // 深橙棕色
+                ],
                 type: 'group',
-                field: 'group',
+                field: 'category',
             },
         },
         edge: {
@@ -294,9 +341,27 @@ defineExpose({
 });
 
 // 监听数据变化
-watch(() => props.data, () => {
+watch(() => props.data, (newData, oldData) => {
     nextTick(() => {
-        updateGraphData();
+        // 如果数据结构发生重大变化（比如节点数量变化超过阈值），重新初始化图
+        if (!oldData || 
+            Math.abs(newData.nodes.length - oldData.nodes.length) > 2 ||
+            Math.abs(newData.edges.length - oldData.edges.length) > 5) {
+            
+            console.log('Data structure changed significantly, reinitializing 3D graph');
+            
+            // 销毁现有图实例
+            if (graph) {
+                graph.destroy();
+                graph = null;
+            }
+            
+            // 重新初始化
+            initGraph();
+        } else {
+            // 小幅数据变化，只更新数据
+            updateGraphData();
+        }
     });
 }, { deep: true });
 
