@@ -247,10 +247,10 @@ export const generateRandomEdges = (nodes: NodeData[], edgeDensity: number = 0.0
           target: targetNode.id,
           type: edgeType,
           weight,
-          label: edgeType === 'weighted' ? weight.toString() : undefined,
+          // label: edgeType === 'weighted' ? weight.toString() : undefined,
           style: {
-            stroke: edgeType === 'weighted' ? '#F6BD16' : '#999',
-            lineWidth: edgeType === 'weighted' ? 3 : 1,
+            // stroke: edgeType === 'weighted' ? '#F6BD16' : '#999',
+            // lineWidth: edgeType === 'weighted' ? 3 : 1,
             lineDash: edgeType === 'double' ? [5, 5] : undefined
           }
         });
