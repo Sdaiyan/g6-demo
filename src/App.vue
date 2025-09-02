@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { ElContainer, ElHeader, ElMain, ElButton, ElSpace, ElDivider } from 'element-plus';
-import { Refresh, Download, Setting } from '@element-plus/icons-vue';
+import { ElContainer, ElHeader, ElMain, ElButton, ElSpace, ElDivider, ElSwitch } from 'element-plus';
+import { Refresh, Download, Setting, View } from '@element-plus/icons-vue';
 import GraphVisualization from './components/GraphVisualization.vue';
+import GraphVisualization3D from './components/GraphVisualization3D.vue';
 import NodeDetailPanel from './components/NodeDetailPanel.vue';
 import SearchComponent from './components/SearchComponent.vue';
 import { generateGraphData } from './utils/dataGenerator';
@@ -14,6 +15,7 @@ const selectedNode = ref<NodeData>();
 const selectedNodeId = ref<string>();
 const showDetailPanel = ref(false);
 const graphRef = ref();
+const is3DMode = ref(false); // 3D模式切换
 
 // 默认生成配置
 const defaultConfig: GeneratorConfig = {
@@ -52,8 +54,17 @@ const resetView = () => {
 };
 
 // 处理节点点击
-const handleNodeClick = (nodeid: string) => {
-  const node = graphData.value.nodes.find(n => n.id === nodeid);
+const handleNodeClick = (nodeOrId: NodeData | string) => {
+  let node: NodeData | undefined;
+  
+  if (typeof nodeOrId === 'string') {
+    // 2D组件传递的是节点ID字符串
+    node = graphData.value.nodes.find(n => n.id === nodeOrId);
+  } else {
+    // 3D组件传递的是节点对象
+    node = nodeOrId;
+  }
+  
   if (node) {
     selectedNode.value = node;
     selectedNodeId.value = node.id;
@@ -112,6 +123,17 @@ const exportData = () => {
   URL.revokeObjectURL(url);
 };
 
+// 切换2D/3D模式
+const toggle3DMode = () => {
+  is3DMode.value = !is3DMode.value;
+  console.log('Switched to', is3DMode.value ? '3D' : '2D', 'mode');
+  
+  // 清除当前选中状态
+  selectedNode.value = undefined;
+  selectedNodeId.value = undefined;
+  showDetailPanel.value = false;
+};
+
 // 组件挂载后生成初始数据
 onMounted(() => {
   generateData();
@@ -139,6 +161,16 @@ onMounted(() => {
         
         <div class="header-right">
           <ElSpace>
+            <div class="mode-switch">
+              <ElSwitch
+                :model-value="is3DMode"
+                @change="toggle3DMode"
+                active-text="3D"
+                inactive-text="2D"
+                active-color="#13ce66"
+                inactive-color="#ff4949"
+              />
+            </div>
             <ElButton 
               type="primary" 
               :icon="Refresh" 
@@ -168,7 +200,22 @@ onMounted(() => {
       <!-- 主要内容区域 -->
       <ElMain class="app-main">
         <div class="graph-area">
+          <!-- 2D 视图 -->
           <GraphVisualization
+            v-if="!is3DMode"
+            ref="graphRef"
+            :data="graphData"
+            :selected-node-id="selectedNodeId"
+            :width="containerWidth"
+            :height="containerHeight"
+            @node-click="handleNodeClick"
+            @node-hover="handleNodeHover"
+            @canvas-click="handleCanvasClick"
+          />
+          
+          <!-- 3D 视图 -->
+          <GraphVisualization3D
+            v-if="is3DMode"
             ref="graphRef"
             :data="graphData"
             :selected-node-id="selectedNodeId"
@@ -193,6 +240,8 @@ onMounted(() => {
 
     <!-- 状态信息 -->
     <div class="status-bar">
+      <span>视图模式: {{ is3DMode ? '3D模式' : '2D模式' }}</span>
+      <ElDivider direction="vertical" />
       <span>节点数: {{ graphData.nodes.length }}</span>
       <ElDivider direction="vertical" />
       <span>连接数: {{ graphData.edges.length }}</span>
@@ -255,9 +304,25 @@ onMounted(() => {
   }
 
   .header-right {
-    min-width: 300px;
+    min-width: 350px;
     display: flex;
     justify-content: flex-end;
+
+    .mode-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+
+      .mode-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        min-width: 20px;
+      }
+    }
   }
 }
 
@@ -309,7 +374,13 @@ onMounted(() => {
     }
 
     .header-right {
-      min-width: 200px;
+      min-width: 250px;
+
+      .mode-switch {
+        .mode-label {
+          font-size: 12px;
+        }
+      }
 
       :deep(.el-space) {
         gap: 8px !important;

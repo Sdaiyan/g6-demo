@@ -15,7 +15,8 @@
     "lint": "eslint . --fix"
   },
   "dependencies": {
-    "@antv/g6": "^5.0.49",
+    "@antv/g6": "^5.0.31",
+    "@antv/g6-extension-3d": "^0.1.16",
     "@element-plus/icons-vue": "^2.3.2",
     "@faker-js/faker": "^10.0.0",
     "element-plus": "^2.11.1",

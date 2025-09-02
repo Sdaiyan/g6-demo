@@ -106,7 +106,7 @@ const initGraph = () => {
 					return 12 - (d.data.level || 0) * 3;
 				},
 				labelWordWrap: true,
-				labelMaxLines: 3,	
+				labelMaxLines: 3,
 				labelMaxWidth: 60,
 				labelFill: '#333',
 				labelPlacement: 'bottom',
@@ -221,7 +221,7 @@ const initGraph = () => {
 			},
 			{
 				type: 'click-select',
-      	key: 'click-select-1',
+				key: 'click-select-1',
 				onClick: (event: any) => {
 					emit('nodeClick', event.target.id);
 				}
@@ -265,7 +265,6 @@ const updateGraphData = () => {
 
 // 高亮指定节点
 const highlightNode = (nodeId: string) => {
-	debugger
 	if (!graph || !nodeId || !props.data || !props.data.nodes) return;
 
 	try {
