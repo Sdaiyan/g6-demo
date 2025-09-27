@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码框字符位置演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .password-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .digit {
+            width: 50px;
+            height: 60px;
+            border: 2px solid #ddd;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .digit:hover {
+            border-color: #aaa;
+        }
+        
+        .digit.active {
+            background-color: #4a90e2;
+            color: white;
+            border-color: #4a90e2;
+        }
+        
+        .digit.error {
+            background-color: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        .explanation {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #4a90e2;
+        }
+        
+        .explanation h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .explanation p {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .position-indicator {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .position-number {
+            width: 50px;
+            text-align: center;
+            margin: 0 5px;
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            text-align: center;
+            color: #777;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>密码框字符位置演示</h1>
+        <div class="description">
+            点击任意位置查看"work"字符串如何占据密码框中的位置
+        </div>
+        
+        <div class="position-indicator">
+            <div class="position-number">1</div>
+            <div class="position-number">2</div>
+            <div class="position-number">3</div>
+            <div class="position-number">4</div>
+            <div class="position-number">5</div>
+            <div class="position-number">6</div>
+            <div class="position-number">7</div>
+            <div class="position-number">8</div>
+        </div>
+        
+        <div class="password-container">
+            <div class="digit" data-index="0"></div>
+            <div class="digit" data-index="1"></div>
+            <div class="digit" data-index="2"></div>
+            <div class="digit" data-index="3"></div>
+            <div class="digit" data-index="4"></div>
+            <div class="digit" data-index="5"></div>
+            <div class="digit" data-index="6"></div>
+            <div class="digit" data-index="7"></div>
+        </div>
+        
+        <div class="explanation">
+            <h3>工作原理</h3>
+            <p>点击任意位置，如果"work"可以完全放入密码框中（即从点击位置开始有4个连续空位），则该位置开始的4个字符将高亮显示为蓝色，并填入"work"。</p>
+            <p>如果无法放置（例如点击第6位，因为后面只有3个位置），所有位置将短暂闪烁红色，然后恢复为白色。</p>
+        </div>
+        
+        <div class="instructions">
+            提示：尝试点击不同的位置，观察"work"字符串如何适应密码框
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const digits = document.querySelectorAll('.digit');
+            const word = 'work';
+            const wordLength = word.length;
+            const totalDigits = digits.length;
+            
+            digits.forEach(digit => {
+                digit.addEventListener('click', function() {
+                    const startIndex = parseInt(this.getAttribute('data-index'));
+                    
+                    // 检查是否可以放置单词
+                    if (startIndex <= totalDigits - wordLength) {
+                        // 可以放置 - 清除所有样式和内容
+                        digits.forEach(d => {
+                            d.classList.remove('active');
+                            d.textContent = '';
+                        });
+                        
+                        // 高亮并填充单词
+                        for (let i = 0; i < wordLength; i++) {
+                            const currentIndex = startIndex + i;
+                            digits[currentIndex].classList.add('active');
+                            digits[currentIndex].textContent = word[i];
+                        }
+                    } else {
+                        // 无法放置 - 显示错误效果
+                        digits.forEach(d => {
+                            d.classList.remove('active');
+                            d.classList.add('error');
+                            d.textContent = '';
+                        });
+                        
+                        // 短暂显示错误后恢复
+                        setTimeout(() => {
+                            digits.forEach(d => {
+                                d.classList.remove('error');
+                            });
+                        }, 500);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
